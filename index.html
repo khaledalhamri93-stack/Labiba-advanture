@@ -449,15 +449,26 @@ function closeModal(){const m=$k('kitModal');if(m)m.remove()}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* ---------- الإعدادات ---------- */
-let unlocked=false;
+/* كلمة سر المعلم: تحمي صفحة المعلم فقط، والإعدادات مفتوحة للجميع */
+const PKEY='__tpin_'+C.id;
+function getPin(){try{return localStorage.getItem(PKEY)||(S.pw&&S.pw!=='1234'?S.pw:'1234')}catch(e){return '1234'}}
+function checkPin(v){return String(v||'').trim()===getPin()}
+function changePin(){
+ modal(`<div class="khead"><h2>🔑 كلمة سر صفحة المعلم</h2><button class="kx" id="kClose" aria-label="إغلاق">✖</button></div>
+  <p class="kmeta">لا يدخل صفحة المعلم إلا من يعرف كلمة السر. تُحفظ على هذا الجهاز.</p>
+  <div class="kline"><b>كلمة السر الحالية</b><input id="kOld" type="password" inputmode="numeric" maxlength="20" class="kin" autocomplete="off" aria-label="كلمة السر الحالية"></div>
+  <div class="kline"><b>كلمة السر الجديدة</b><input id="kNew1" type="password" inputmode="numeric" maxlength="20" class="kin" autocomplete="off" aria-label="كلمة السر الجديدة"></div>
+  <div class="kline"><b>أعد كتابتها</b><input id="kNew2" type="password" inputmode="numeric" maxlength="20" class="kin" autocomplete="off" aria-label="تأكيد كلمة السر"></div>
+  <p id="kPwMsg2" class="kerr" aria-live="polite"></p>
+  <div class="krow"><button class="kb g" id="kX">إلغاء</button><button class="kb y" id="kPwSave">حفظ كلمة السر</button></div>`);
+ setTimeout(()=>{try{$k('kOld').focus()}catch(e){}},50);
+ $k('kClose').onclick=$k('kX').onclick=closeModal;
+ $k('kPwSave').onclick=()=>{const o=$k('kOld').value.trim(),a=$k('kNew1').value.trim(),b=$k('kNew2').value.trim(),m=$k('kPwMsg2');
+  if(!checkPin(o)){m.textContent='كلمة السر الحالية غير صحيحة.';return}
+  if(a.length<3){m.textContent='كلمة السر قصيرة: ٣ أحرف أو أرقام على الأقل.';return}if(a!==b){m.textContent='الكلمتان الجديدتان غير متطابقتين.';return}
+  try{localStorage.setItem(PKEY,a)}catch(e){}closeModal();toast('✅ حُفظت كلمة السر الجديدة')};
+}
 function openSettings(){
- if(S.lock&&!unlocked){
-  modal(`<h2>🔒 الإعدادات محميّة</h2><p class="kmeta">أدخل كلمة سر الإعدادات</p>
-   <input id="kPw" type="password" inputmode="numeric" autocomplete="off" maxlength="20" class="kpw" aria-label="كلمة السر">
-   <p id="kPwMsg" class="kerr"></p><div class="krow"><button class="kb g" id="kX">إلغاء</button><button class="kb y" id="kOk">دخول</button></div>`);
-  const i=$k('kPw');setTimeout(()=>i.focus(),50);
-  const go=()=>{if(i.value===S.pw){unlocked=true;openSettings()}else{$k('kPwMsg').textContent='كلمة السر غير صحيحة';i.value=''}};
-  $k('kOk').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};$k('kX').onclick=closeModal;return}
  const sw=(id,on)=>`<button class="ksw ${on?'on':''}" id="${id}" role="switch" aria-checked="${on}"><span></span></button>`;
  const sl=(id,v,min,max)=>`<input type="range" id="${id}" min="${min}" max="${max}" value="${Math.round(v*100)}" class="ksl">`;
  modal(`<div class="khead"><h2>⚙️ الإعدادات</h2><button class="kx" id="kClose" aria-label="إغلاق">✖</button></div>
@@ -475,17 +486,12 @@ function openSettings(){
    <div class="krow"><button class="kb y" id="kBak">⬇ تنزيل نسخة احتياطية</button><label class="kb g" for="kRes">⬆ استرجاع من نسخة</label><input type="file" id="kRes" accept=".json,application/json" hidden></div>
    <p id="kBakMsg" class="kmeta"></p>
   </section>
-  <section><h3>🔒 كلمة سر الإعدادات</h3>
-   <div class="kline"><b>طلب كلمة السر عند فتح الإعدادات</b>${sw('kLock',S.lock)}</div>
-   <div class="kline"><input id="kNew1" type="password" inputmode="numeric" maxlength="20" placeholder="كلمة سر جديدة" class="kin" aria-label="كلمة سر جديدة"><input id="kNew2" type="password" inputmode="numeric" maxlength="20" placeholder="أعد كتابتها" class="kin" aria-label="تأكيد كلمة السر"><button class="kb s" id="kPwSave">حفظ</button></div>
-   <p id="kPwMsg2" class="kmeta"></p>
-  </section>
   <section><h3>♻️ الإعدادات الأصلية</h3>
-   <p class="kmeta">يعيد الصوت والموسيقى والإضاءة وكلمة السر (١٢٣٤) إلى ما كانت عليه أول مرة، ولا يمسح تقدّم ${C.fem?'الطالبات':'الطلاب'}.</p>
+   <p class="kmeta">يعيد الصوت والموسيقى والإضاءة إلى ما كانت عليه أول مرة، ولا يمسح تقدّم ${C.fem?'الطالبات':'الطلاب'}.</p>
    <div class="krow" id="kDefRow"><button class="kb p" id="kDef">♻️ الرجوع إلى الإعدادات الأصلية</button></div>
   </section>`,'kset');
  const bindSw=(id,key,after)=>{$k(id).onclick=()=>{S[key]=!S[key];$k(id).classList.toggle('on',S[key]);$k(id).setAttribute('aria-checked',S[key]);save();apply();after&&after()}};
- bindSw('kMuted','muted',()=>{if(!S.muted)musicStart()});bindSw('kSfxOn','sfxOn');bindSw('kMusOn','musicOn',()=>{if(S.musicOn){started=true;musicStart()}});bindSw('kLock','lock');
+ bindSw('kMuted','muted',()=>{if(!S.muted)musicStart()});bindSw('kSfxOn','sfxOn');bindSw('kMusOn','musicOn',()=>{if(S.musicOn){started=true;musicStart()}});
  const bindSl=(id,key,lab,min)=>{$k(id).oninput=e=>{S[key]=e.target.value/100;if(lab)$k(lab).textContent=AR(e.target.value)+'٪';apply()};$k(id).onchange=save};
  bindSl('kMaster','master','kMasterV');bindSl('kSfx','sfx');bindSl('kMus','music');bindSl('kBright','bright','kBrightV');
  $k('kTSfx').onclick=testSfx;$k('kTMus').onclick=testMusic;
@@ -501,11 +507,8 @@ function openSettings(){
    $k('kResY').onclick=()=>{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(C.prefix.some(p=>k.startsWith(p)))localStorage.removeItem(k)}
     Object.entries(data.keys).forEach(([k,v])=>{try{localStorage.setItem(k,v)}catch(e){}});row.textContent='✅ تم الاسترجاع. ستُعاد تحميل اللعبة…';setTimeout(()=>location.reload(),1200)};
   }catch(err){$k('kBakMsg').textContent='هذا الملف ليس نسخة احتياطية من '+C.title+'.'}};r.readAsText(f);e.target.value=''};
- $k('kPwSave').onclick=()=>{const a=$k('kNew1').value.trim(),b=$k('kNew2').value.trim(),m=$k('kPwMsg2');
-  if(a.length<3){m.textContent='كلمة السر قصيرة: ٣ أحرف أو أرقام على الأقل.';return}if(a!==b){m.textContent='الكلمتان غير متطابقتين.';return}
-  S.pw=a;save();$k('kNew1').value=$k('kNew2').value='';m.textContent='✅ حُفظت كلمة السر الجديدة.'};
  $k('kDef').onclick=()=>{$k('kDefRow').innerHTML='<span class="kmeta">متأكد؟</span> <button class="kb p" id="kDefY">نعم</button> <button class="kb g" id="kDefN">إلغاء</button>';
-  $k('kDefN').onclick=openSettings;$k('kDefY').onclick=()=>{S=Object.assign({},DEF);save();apply();toast('♻️ أُعيدت الإعدادات الأصلية');openSettings()}};
+  $k('kDefN').onclick=openSettings;$k('kDefY').onclick=()=>{S=Object.assign({},DEF,{pw:S.pw});save();apply();toast('♻️ أُعيدت الإعدادات الأصلية');openSettings()}};
 }
 
 /* ---------- الشهادة ---------- */
@@ -546,7 +549,7 @@ async function certificate(o){
  $k('kClose').onclick=$k('kCX').onclick=closeModal;
  $k('kCDl').onclick=()=>cv.toBlob(async b=>{const ok=await saveFile(`شهادة_${o.name.replace(/\s+/g,'_')}.png`,b);$k('kCMsg').textContent=ok?'✅ تم تنزيل الشهادة':'تعذّر التنزيل من هنا. يمكنك الضغط مطوّلًا على الصورة لحفظها.'},'image/png');
 }
-window.KIT={track:setTrack,certificate,openSettings,toast,settings:()=>Object.assign({},S)};
+window.KIT={checkPin,changePin,track:setTrack,certificate,openSettings,toast,settings:()=>Object.assign({},S)};
 /* تشغيل الموسيقى فور فتح الرابط: نحاول مباشرة، وإن منعها المتصفح نعرض شاشة بدء تُشغّلها بأول لمسة */
 function autoStart(){bar();if(vMus()===0)return;musicStart();
  setTimeout(()=>{if(isPlaying()||$k('kitStart'))return;const d=document.createElement('div');d.id='kitStart';
@@ -1382,7 +1385,7 @@ function pinGate(){
   <p id="pinMsg" style="color:#b33;min-height:1.5em;font-weight:800;margin:0"></p>
   <div class="btns"><button class="b3d g" id="pbk">رجوع</button><button class="b3d y" id="pgo">دخول</button></div></div></div>`;
  const inp=$('pin');inp.focus();
- const go=()=>{if(inp.value.trim()===TEACHER_PIN){pinOk=true;results()}else{$('pinMsg').textContent='الرقم السري غير صحيح';inp.value='';beep('no')}};
+ const go=()=>{if(window.KIT&&KIT.checkPin?KIT.checkPin(inp.value):inp.value.trim()===TEACHER_PIN){pinOk=true;results()}else{$('pinMsg').textContent='الرقم السري غير صحيح';inp.value='';beep('no')}};
  $('pgo').onclick=go;inp.onkeydown=e=>{if(e.key==='Enter')go()};$('pbk').onclick=home;
 }
 const fmtT=t=>{try{return new Date(t).toLocaleString('ar-BH',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
@@ -1410,7 +1413,7 @@ async function results(){
   <div class="kpis"><div class="kpi"><b>${AR(all.length)}</b><span>مرحلة لُعبت</span></div><div class="kpi"><b>${AR(played.size)}</b><span>طالبة لعبن</span></div><div class="kpi"><b>${AR(all.filter(r=>r.win&&r.stage===2).length)}</b><span>عالم أُكمل</span></div><div class="kpi"><b>${AR(all.length?(all.reduce((s,r)=>s+r.correct/(r.total||1),0)/all.length*10).toFixed(1):0)}</b><span>متوسط من ١٠</span></div></div>
   <div class="rtabs" role="tablist">${tabs.map(([k,t])=>`<button class="rtab" role="tab" data-t="${k}" aria-selected="${rTab===k}">${t}</button>`).join('')}</div>
   ${body}
-  <div class="btns" style="justify-content:space-between"><button class="b3d g" id="bk">⬅ الصفحة الرئيسية</button><button class="b3d y" id="pod">🏆 منصّة الأبطال</button>
+  <div class="btns" style="justify-content:space-between"><button class="b3d g" id="bk">⬅ الصفحة الرئيسية</button><button class="b3d y" id="pod">🏆 منصّة الأبطال</button><button class="b3d v" id="tpw">🔑 كلمة السر</button>
    <span class="row"><button class="b3d o" id="csv">⬇ تنزيل Excel (CSV)</button><button class="b3d v" id="ua">${unlockAll?'🔒 أعد قفل العوالم':'🔓 افتح كل العوالم'}</button>${rConfirm?`<span class="confirm">حذف كل النتائج نهائيًا؟ <button class="b3d p" id="yes">نعم</button><button class="b3d g" id="no">إلغاء</button></span>`:`<button class="b3d p" id="clr">🗑 مسح النتائج</button>`}</span></div>
   <div class="btns" style="justify-content:flex-start;margin-top:12px"><button class="b3d p" id="rs">♻️ إعادة الإعدادات</button></div>
   ${rsOpen?resetPanel():''}
@@ -1419,7 +1422,7 @@ async function results(){
  app.querySelectorAll('.rtab').forEach(b=>b.onclick=()=>{rTab=b.dataset.t;results()});
  $('bk').onclick=home;
  bindReset();
- $('pod').onclick=()=>podium(results);
+ $('pod').onclick=()=>podium(results);if($('tpw'))$('tpw').onclick=()=>{if(window.KIT&&KIT.changePin)KIT.changePin()};
  $('ua').onclick=()=>{unlockAll=!unlockAll;LS.set('noor-unlock-all',unlockAll);results()};
  $('csv').onclick=()=>exportCsv(all);
  const clr=$('clr');if(clr)clr.onclick=()=>{rConfirm=true;results()};
